@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<title>LUMEN</title>
+<meta name="description" content="LUMEN: fly as the last spark of light and rekindle a sleeping world." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Outfit:wght@200;300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#eef6ff; --dim:rgba(226,238,255,.62); --faint:rgba(226,238,255,.28);
+    --accent:#9fe8ff; --warn:#ff7d9c;
+    --serif:'Cormorant Garamond','Iowan Old Style','Times New Roman',serif;
+    --sans:'Outfit','Segoe UI',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;overflow:hidden;background:#010208;color:var(--ink);font-family:var(--sans);
+    -webkit-user-select:none;user-select:none;touch-action:none;-webkit-tap-highlight-color:transparent}
+  canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+  body.playing{cursor:none}
+  .layer{position:fixed;inset:0;pointer-events:none}
+
+  /* ───── title ───── */
+  #title{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 16px;
+    pointer-events:auto;transition:opacity 1.8s ease,transform 2.4s ease,filter 1.8s ease;
+    background:radial-gradient(ellipse at 50% 50%,rgba(1,2,8,0) 0%,rgba(1,2,8,.35) 60%,rgba(1,2,8,.8) 100%)}
+  #title.gone{opacity:0;pointer-events:none;transform:scale(1.06);filter:blur(6px)}
+  #title h1{font-family:var(--serif);font-weight:300;font-size:clamp(64px,14vw,190px);line-height:1;letter-spacing:.34em;margin-right:-.34em;color:#f6fbff;
+    text-shadow:0 0 14px rgba(190,230,255,.55),0 0 50px rgba(140,190,255,.38),0 0 130px rgba(160,120,255,.32);animation:breathe 7s ease-in-out infinite}
+  #title .tag{font-family:var(--serif);font-style:italic;font-weight:300;font-size:clamp(17px,2.3vw,25px);color:var(--dim);margin-top:.9em;letter-spacing:.03em}
+  #begin{margin-top:3em;cursor:pointer;background:rgba(255,255,255,.02);border:1px solid rgba(200,230,255,.32);color:var(--ink);
+    font-family:var(--sans);font-weight:300;font-size:13px;letter-spacing:.55em;padding:17px 34px 17px 44px;border-radius:999px;
+    transition:all .5s ease;backdrop-filter:blur(2px)}
+  #begin:hover,#begin:focus-visible{outline:none;border-color:rgba(210,240,255,.95);letter-spacing:.66em;
+    box-shadow:0 0 34px rgba(160,220,255,.35),inset 0 0 22px rgba(160,220,255,.16)}
+  #begin:disabled{opacity:.35;cursor:wait}
+  #title .hints{margin-top:2.8em;font-size:11px;letter-spacing:.22em;color:var(--faint);line-height:2.3;text-transform:uppercase}
+  #title .hints b{color:var(--dim);font-weight:400}
+  #title .phones{margin-top:1.4em;font-family:var(--serif);font-style:italic;font-size:15px;color:var(--faint);letter-spacing:.05em}
+  @keyframes breathe{0%,100%{opacity:.84;filter:blur(.2px)}50%{opacity:1;filter:blur(0)}}
+
+  /* ───── story & banner ───── */
+  #story{display:flex;align-items:center;justify-content:center;text-align:center;padding:0 16px}
+  #story p{font-family:var(--serif);font-style:italic;font-weight:300;font-size:clamp(24px,3.6vw,44px);color:#f2f8ff;letter-spacing:.02em;
+    opacity:0;transform:translateY(10px);filter:blur(8px);transition:opacity 1.4s ease,transform 1.8s ease,filter 1.4s ease;
+    text-shadow:0 0 24px rgba(160,210,255,.45)}
+  #story p.show{opacity:1;transform:none;filter:none}
+
+  #banner{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:17vh;text-align:center}
+  #banner .num{font-family:var(--sans);font-weight:300;font-size:12px;letter-spacing:.8em;margin-right:-.8em;color:var(--dim)}
+  #banner .name{font-family:var(--serif);font-weight:300;font-size:clamp(40px,7vw,88px);letter-spacing:.2em;margin-right:-.2em;margin-top:.15em;
+    text-transform:uppercase;color:#fff;text-shadow:0 0 22px rgba(190,230,255,.6),0 0 80px rgba(150,170,255,.4)}
+  #banner .sub{font-family:var(--serif);font-style:italic;font-weight:300;font-size:clamp(18px,2.4vw,27px);color:var(--dim);margin-top:.35em}
+  #banner .rule{width:0;height:1px;margin-top:1.1em;background:linear-gradient(90deg,transparent,rgba(220,240,255,.8),transparent);transition:width 2.4s ease}
+  #banner > *{opacity:0;filter:blur(10px);transform:translateY(8px);transition:opacity 1.6s ease,filter 1.6s ease,transform 2s ease}
+  #banner.show > *{opacity:1;filter:none;transform:none}
+  #banner.show .rule{width:min(360px,60vw)}
+  #banner.show .sub{transition-delay:.5s}
+
+  /* ───── hud ───── */
+  #hud{opacity:0;transition:opacity 2s ease}
+  #hud.on{opacity:1}
+  #hud .tl{position:absolute;left:max(22px,env(safe-area-inset-left));top:20px}
+  #hud .tl .k{font-size:10px;letter-spacing:.42em;color:var(--faint);text-transform:uppercase}
+  #hud .tl .v{font-family:var(--serif);font-size:22px;letter-spacing:.14em;text-transform:uppercase;margin-top:2px;color:var(--ink);text-shadow:0 0 14px rgba(160,210,255,.4)}
+  #hud .tl .prog{width:150px;height:1px;background:rgba(255,255,255,.12);margin-top:9px;position:relative;overflow:hidden}
+  #hud .tl .prog i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,rgba(160,230,255,.3),#fff);box-shadow:0 0 8px #bdf}
+  #hud .tr{position:absolute;right:max(22px,env(safe-area-inset-right));top:18px;text-align:right}
+  #hud .tr .motes{font-family:var(--serif);font-size:30px;font-weight:300;letter-spacing:.06em;text-shadow:0 0 16px rgba(170,220,255,.5)}
+  #hud .tr .k{font-size:10px;letter-spacing:.42em;color:var(--faint);text-transform:uppercase}
+  #hud .tr .combo{margin-top:8px;font-family:var(--sans);font-weight:200;font-size:15px;letter-spacing:.2em;color:var(--dim);transition:transform .15s ease}
+  #hud .tr .combo b{font-weight:400;color:#fff;font-size:22px;letter-spacing:.05em}
+  #hud .tr .combo.bump{transform:scale(1.12)}
+  #hud .tr .mult{font-size:11px;letter-spacing:.3em;color:#ffd9a0;margin-top:3px;min-height:14px;text-shadow:0 0 10px rgba(255,190,110,.6)}
+  #hud .bc{position:absolute;left:50%;bottom:max(26px,env(safe-area-inset-bottom));transform:translateX(-50%);text-align:center;width:min(340px,70vw)}
+  #hud .bc .bar{height:2px;background:rgba(255,255,255,.1);border-radius:2px;position:relative;overflow:visible}
+  #hud .bc .bar i{position:absolute;left:50%;top:0;bottom:0;width:70%;transform:translateX(-50%);border-radius:2px;
+    background:linear-gradient(90deg,transparent,#d8f3ff 25%,#fff 50%,#d8f3ff 75%,transparent);box-shadow:0 0 12px rgba(180,230,255,.9),0 0 30px rgba(140,200,255,.5);transition:background .4s}
+  #hud .bc .k{font-size:10px;letter-spacing:.5em;margin-right:-.5em;color:var(--faint);margin-top:9px;text-transform:uppercase}
+  #hud .bc.low .bar i{background:linear-gradient(90deg,transparent,#ffb3c4 30%,#fff 50%,#ffb3c4 70%,transparent);box-shadow:0 0 14px rgba(255,120,150,.9);animation:lowpulse .8s ease-in-out infinite}
+  #hud .bc.low .k{color:var(--warn)}
+  @keyframes lowpulse{50%{opacity:.35}}
+
+  #hint{position:absolute;left:0;right:0;bottom:84px;text-align:center;font-size:11px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase;
+    opacity:0;transition:opacity 1.5s ease;padding:0 16px;line-height:2}
+  #hint.show{opacity:1}
+
+  #toasts{position:fixed;left:0;right:0;top:76%;height:0;display:flex;justify-content:center}
+  .toast{position:absolute;white-space:nowrap;font-family:var(--sans);font-weight:300;font-size:13px;letter-spacing:.42em;text-transform:uppercase;
+    color:#fff;text-shadow:0 0 12px rgba(170,225,255,.9);animation:toast 1.7s cubic-bezier(.2,.7,.2,1) forwards}
+  .toast.gold{color:#ffe3ad;text-shadow:0 0 14px rgba(255,190,90,.95)}
+  .toast.bad{color:#ffc1cf;text-shadow:0 0 14px rgba(255,80,120,.95)}
+  .toast.big{font-size:17px;letter-spacing:.5em}
+  @keyframes toast{0%{opacity:0;transform:translateY(12px) scale(.9);filter:blur(4px)}15%{opacity:1;transform:none;filter:none}70%{opacity:1}100%{opacity:0;transform:translateY(-34px)}}
+
+  #reticle{position:fixed;left:0;top:0;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;pointer-events:none;
+    border:1px solid rgba(220,240,255,.5);box-shadow:0 0 10px rgba(160,220,255,.35);opacity:0;transition:opacity .6s}
+  #reticle::after{content:'';position:absolute;left:50%;top:50%;width:3px;height:3px;margin:-1.5px;border-radius:50%;background:#fff}
+  body.playing #reticle{opacity:.75}
+
+  #fade{position:fixed;inset:0;pointer-events:none;background:#000;opacity:1;transition:opacity 2.5s ease;z-index:10}
+  #end{z-index:20} #loading{z-index:30}
+  #msg{display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--serif);font-style:italic;font-weight:300;
+    font-size:clamp(22px,3vw,36px);color:#fff;opacity:0;transition:opacity 1.2s ease;padding:0 16px;text-shadow:0 0 20px rgba(255,255,255,.4)}
+  #msg.show{opacity:1}
+
+  /* ───── end + pause ───── */
+  .panel{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;opacity:0;transition:opacity 2s ease;padding:0 16px}
+  .panel.show{opacity:1;pointer-events:auto}
+  #end h2{font-family:var(--serif);font-weight:300;font-size:clamp(54px,10vw,130px);letter-spacing:.3em;margin-right:-.3em;color:#1d1830;
+    text-shadow:0 0 30px rgba(255,255,255,.9)}
+  #end .line{font-family:var(--serif);font-style:italic;font-size:clamp(19px,2.6vw,28px);color:#3a3150;margin-top:.4em}
+  #end .stats{display:flex;gap:clamp(18px,5vw,58px);margin-top:2.4em;flex-wrap:wrap;justify-content:center}
+  #end .stat .n{font-family:var(--serif);font-size:clamp(30px,4.5vw,46px);color:#221c36}
+  #end .stat .l{font-size:10px;letter-spacing:.38em;text-transform:uppercase;color:#5c5275;margin-top:2px}
+  .btns{display:flex;gap:16px;margin-top:3em;flex-wrap:wrap;justify-content:center}
+  .btn{cursor:pointer;font-family:var(--sans);font-weight:400;font-size:12px;letter-spacing:.4em;text-transform:uppercase;padding:15px 30px 15px 36px;
+    border-radius:999px;border:1px solid rgba(40,30,70,.35);background:rgba(255,255,255,.35);color:#221c36;transition:all .4s}
+  .btn:hover,.btn:focus-visible{outline:none;background:rgba(255,255,255,.75);box-shadow:0 0 30px rgba(255,255,255,.9)}
+  #end .credit{margin-top:2.6em;font-size:10px;letter-spacing:.3em;color:#6d6488;text-transform:uppercase}
+
+  #pause{background:rgba(1,2,10,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  #pause h3{font-family:var(--serif);font-weight:300;font-size:clamp(40px,6vw,64px);letter-spacing:.3em;margin-right:-.3em}
+  #pause p{font-size:11px;letter-spacing:.3em;color:var(--dim);margin-top:1.4em;text-transform:uppercase;line-height:2.2}
+  #pause .btn{color:var(--ink);background:rgba(255,255,255,.04);border-color:rgba(220,240,255,.35)}
+  #pause .btn:hover{background:rgba(255,255,255,.12);box-shadow:0 0 30px rgba(160,220,255,.3)}
+
+  #corner{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));display:flex;gap:8px;pointer-events:auto;opacity:.45;transition:opacity .3s}
+  #corner:hover{opacity:1}
+  #corner button{width:34px;height:34px;border-radius:50%;border:1px solid rgba(220,240,255,.3);background:rgba(0,0,0,.2);color:var(--ink);cursor:pointer;font-size:14px;line-height:1}
+  body.playing #corner{cursor:auto}
+
+  #touchBoost{position:fixed;right:max(22px,env(safe-area-inset-right));bottom:max(70px,calc(env(safe-area-inset-bottom) + 60px));width:86px;height:86px;border-radius:50%;
+    border:1px solid rgba(220,240,255,.45);background:radial-gradient(circle,rgba(180,230,255,.18),rgba(0,0,0,.1));color:var(--ink);font-size:10px;letter-spacing:.3em;
+    display:none;align-items:center;justify-content:center;pointer-events:auto;text-transform:uppercase}
+  #touchBoost.on{background:radial-gradient(circle,rgba(200,240,255,.5),rgba(0,0,0,.1))}
+  body.touch.playing #touchBoost{display:flex}
+
+  #loading{display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:italic;font-size:20px;color:var(--dim);text-align:center;padding:0 24px}
+  #loading.gone{display:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud" class="layer">
+  <div class="tl"><div class="k" id="phNum">Chapter I</div><div class="v" id="phName">The Void</div><div class="prog"><i id="phProg"></i></div></div>
+  <div class="tr"><div class="k">Light gathered</div><div class="motes" id="motes">0</div><div class="combo" id="combo"></div><div class="mult" id="mult"></div></div>
+  <div class="bc" id="lightWrap"><div class="bar"><i id="lightFill"></i></div><div class="k">your light</div></div>
+  <div id="hint"></div>
+</div>
+<div id="toasts"></div>
+<div id="story" class="layer"><p id="storyText"></p></div>
+<div id="banner" class="layer"><div class="num" id="bNum"></div><div class="name" id="bName"></div><div class="rule"></div><div class="sub" id="bSub"></div></div>
+<div id="reticle"></div>
+<div id="msg" class="layer"></div>
+
+<div id="title" class="layer">
+  <h1>LUMEN</h1>
+  <div class="tag">The world has gone dark. You are the last spark.</div>
+  <button id="begin" disabled>Loading</button>
+  <div class="hints"><b>Mouse</b> steer &nbsp;·&nbsp; <b>Hold click / Space</b> surge &nbsp;·&nbsp; <b>Fly low</b> to skim<br/><b>Esc</b> pause &nbsp;·&nbsp; <b>M</b> mute &nbsp;·&nbsp; <b>F</b> fullscreen</div>
+  <div class="phones">best with headphones, in the dark</div>
+</div>
+
+<div id="pause" class="layer panel">
+  <h3>PAUSED</h3>
+  <p>Mouse or WASD to steer · Click or Space to surge<br/>Fly low over the land to skim · Avoid the red void-shards</p>
+  <div class="btns"><button class="btn" id="resume">Resume</button></div>
+</div>
+
+<div id="end" class="layer panel">
+  <h2>LUMEN</h2>
+  <div class="line">The world is awake. It remembers you.</div>
+  <div class="stats">
+    <div class="stat"><div class="n" id="sMotes">0</div><div class="l">light gathered</div></div>
+    <div class="stat"><div class="n" id="sCombo">0</div><div class="l">longest chain</div></div>
+    <div class="stat"><div class="n" id="sClose">0</div><div class="l">close calls</div></div>
+    <div class="stat"><div class="n" id="sTime">0:00</div><div class="l">journey</div></div>
+  </div>
+  <div class="btns"><button class="btn" id="drift">Keep drifting</button><button class="btn" id="again">Begin anew</button></div>
+  <div class="credit">thank you for playing</div>
+</div>
+
+<div id="corner"><button id="muteBtn" title="Mute (M)">♪</button><button id="fsBtn" title="Fullscreen (F)">⤢</button></div>
+<div id="touchBoost">surge</div>
+<div id="fade"></div>
+<div id="loading" class="layer">waking the world…</div>
+
+<script>
+  // Friendly message if the 3D engine can't load (e.g. offline).
+  setTimeout(function () {
+    if (!window.__lumenLoaded) {
+      var l = document.getElementById('loading');
+      l.classList.remove('gone');
+      l.textContent = 'The engine could not be reached. LUMEN needs an internet connection the first time it loads.';
+    }
+  }, 12000);
+</script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+/*__GAME__*/
+</script>
+</body>
+</html>
